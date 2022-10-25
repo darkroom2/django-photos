@@ -9,6 +9,7 @@ class Photo(models.Model):
     dominant_color_hex = models.CharField(max_length=7)
     url = models.CharField(max_length=100)
 
+    image = models.ImageField(upload_to='images/')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
