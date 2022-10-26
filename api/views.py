@@ -26,3 +26,8 @@ class PhotoListCreate(generics.ListCreateAPIView):
         image_data = get(f'{url}.{ext}').content
         serializer.validated_data['image'] = UploadedFile(BytesIO(image_data), name=file_name)
         serializer.save(width=width, height=height, color=color)
+
+
+class PhotoRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Photo.objects.all()
+    serializer_class = PhotoSerializer
