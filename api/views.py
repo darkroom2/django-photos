@@ -9,7 +9,7 @@ from api.serializers import PhotoSerializer
 from photos.models import Photo
 
 
-class PhotoList(generics.ListCreateAPIView):
+class PhotoListCreate(generics.ListCreateAPIView):
     queryset = Photo.objects.all()
     serializer_class = PhotoSerializer
 
