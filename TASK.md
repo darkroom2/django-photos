@@ -17,3 +17,5 @@ Suggestions:
 * Use any frameworks and libraries you'll find useful for the task (we prefer Django)
 * Try to follow the best coding practices
 * Don't be afraid to write tests
+
+loading 5k records takes ~8 minutes.

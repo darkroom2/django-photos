@@ -1,11 +1,13 @@
+import json
 import logging
 import re
 import urllib.parse
 from io import BytesIO
 from pathlib import Path
 
+import requests
+from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile
-from requests import get
 
 from .models import Photo
 
@@ -19,7 +21,7 @@ def parse_url(url):
     height = 0
     color = 'ffffff'
 
-    match = re.findall(r'/(\d+)/([a-fA-F0-9]+)', url)  # hex atleast 4 digits in case last two are 00 and cut off
+    match = re.findall(r'/(\d+)/([a-fA-F0-9]+)', url)
     if match:
         result = match[0]
         width = height = int(result[0])
@@ -30,7 +32,7 @@ def parse_url(url):
         ext = '.png'
         url = f'{url}{ext}'
 
-    image_data = get(url).content
+    image_data = requests.get(url).content
 
     if not match:
         width = 0  # TODO: get width from downloaded image
@@ -47,7 +49,45 @@ def validate_url(url):
         parsed_url = urllib.parse.urlparse(url)
         if parsed_url.scheme not in ('http', 'https') or not len(parsed_url.path) > 1:
             raise ValueError(f'Invalid URL: {url}')
-    except ValueError as e:
-        logger.error(e)
+    except ValueError:
         raise
     return url
+
+
+def get_json(json_url):
+    try:
+        validated_url = validate_url(json_url)
+    except ValueError as val_err:
+        try:
+            json_file = Path(json_url).read_bytes()
+        except (FileNotFoundError, IsADirectoryError) as file_err:
+            raise file_err from val_err
+        try:
+            return json.loads(json_file)
+        except json.JSONDecodeError:
+            raise
+    try:
+        return requests.get(validated_url).json()
+    except json.JSONDecodeError:
+        raise
+
+
+def prepare_photo(photo_data):
+    try:
+        _id = photo_data[settings.EXTERNAL_API_PHOTO_KEYS['id']]
+        title = photo_data[settings.EXTERNAL_API_PHOTO_KEYS['title']]
+        album_id = photo_data[settings.EXTERNAL_API_PHOTO_KEYS['album_id']]
+        photo_url = photo_data[settings.EXTERNAL_API_PHOTO_KEYS['url']]
+    except KeyError as e:
+        logger.error(f'Invalid JSON format: {photo_data}, missing: {e}')
+        return None
+
+    if Photo.objects.filter(pk=_id).exists():
+        logger.warning(f'The photo from {photo_data} already exists')
+        return None
+
+    photo = parse_url(photo_url)
+    photo.id = _id
+    photo.title = title
+    photo.album_id = album_id
+    return photo

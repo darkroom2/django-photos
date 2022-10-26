@@ -1,46 +1,36 @@
-from django.core.management.base import BaseCommand, CommandError
-from requests import get, JSONDecodeError
+from multiprocessing.dummy import Pool
 
+from django.core.management.base import BaseCommand
+
+from photos import utils
 from photos.models import Photo
-from photos.utils import parse_url, validate_url
 
 
 class Command(BaseCommand):
     help = 'Loads batch of photos'
 
     def add_arguments(self, parser):
-        parser.add_argument('json_url', type=str)
+        parser.add_argument('json', type=str, help='URL or JSON file')
 
     def handle(self, *args, **options):
-        json_url = options['json_url']
+        json_url = options['json']
 
-        try:
-            validated_url = validate_url(json_url)
-        except ValueError as e:
-            raise CommandError(f'Invalid URL: {json_url}') from e
+        json_content = utils.get_json(json_url)  # list of dicts
 
-        try:
-            json_content = get(validated_url).json()
-        except JSONDecodeError as e:
-            raise CommandError(f'Invalid JSON: {validated_url}') from e
+        files_count = len(json_content)
 
-        for photo_data in json_content:
-            try:
-                _id = photo_data['id']
-                title = photo_data['title']
-                album_id = photo_data['albumId']
-                photo_url = photo_data['url']
-            except KeyError as e:
-                raise CommandError(f'Invalid JSON keys: {photo_data}') from e
+        with Pool() as pool:  # threading in I/O bound tasks might increase performance
+            results = pool.map(utils.prepare_photo, json_content)
 
-            if Photo.objects.filter(pk=_id).exists():
-                self.stdout.write(self.style.WARNING(f'The photo loaded from {photo_url} already exists'))
-                continue
+        photos_to_save = list(filter(lambda x: x, results))
 
-            photo = parse_url(photo_url)
-            photo.id = _id
-            photo.title = title
-            photo.album_id = album_id
-            photo.save()
+        if photos_to_save:
+            Photo.objects.bulk_create(photos_to_save)
 
-        self.stdout.write(self.style.SUCCESS(f'Successfully loaded photos from {json_url}'))
+        skipped_files_count = files_count - len(photos_to_save)
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f'Successfully loaded photos: {files_count - skipped_files_count}, skipped: {skipped_files_count}'
+            )
+        )

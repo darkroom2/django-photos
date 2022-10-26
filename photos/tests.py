@@ -1,10 +1,12 @@
+from io import StringIO
+
+from django.core.management import call_command, CommandError
 from django.test import TestCase
 
 from photos.utils import parse_url, validate_url
 
 
-# Create your tests here.
-class UtilsTestCase(TestCase):
+class UtilsTest(TestCase):
     def setUp(self):
         pass
 
@@ -41,6 +43,46 @@ class UtilsTestCase(TestCase):
     def test_parse_url_valid_custom(self):
         valid_url = 'https://via.placeholder.com/600'
         photo = parse_url(valid_url)
-        self.assertEqual(photo.width, 600)
-        self.assertEqual(photo.height, 600)
-        self.assertEqual(photo.color, '#cccccc')
+        self.assertEqual(photo.width, 0)
+        self.assertEqual(photo.height, 0)
+        self.assertEqual(photo.color, '#ffffff')
+
+
+class LoadBatchCommandTest(TestCase):
+    def test_missing_arg(self):
+        with self.assertRaises(CommandError):
+            call_command('load_batch')
+
+    def test_multiple_positional_args(self):
+        with self.assertRaises(CommandError):
+            call_command('load_batch', 'url', 'url2')
+
+    def test_invalid_positional_arg(self):
+        with self.assertRaises(FileNotFoundError):
+            call_command('load_batch', 'url')
+
+    def test_json_file_valid(self):  # TODO: add mocking file write
+        out = StringIO()
+        call_command('load_batch', 'test_data/photos_small.json', stdout=out)
+        message = 'Successfully loaded photos: 30, skipped: 0'
+        self.assertIn(message, out.getvalue())
+
+    def test_json_file_invalid(self):  # TODO: add mocking file write
+        out = StringIO()
+        call_command('load_batch', 'test_data/photos_invalid.json', stdout=out)
+        message = 'Successfully loaded photos: 0, skipped: 4'
+        self.assertIn(message, out.getvalue())
+
+    def test_json_file_nonexistent(self):
+        with self.assertRaises(FileNotFoundError):
+            call_command('load_batch', 'fake/path/to/file.json')
+
+    # def test_json_url_valid(self):  # TODO: add mocking file download, add mocking file write
+    #     out = StringIO()
+    #     call_command('load_batch', 'https://jsonplaceholder.typicode.com/photos', stdout=out)
+    #     success_message = 'Successfully loaded photos: 5000, skipped: 0'
+    #     self.assertIn(success_message, out.getvalue())
+
+    def test_json_url_invalid(self):
+        with self.assertRaises(FileNotFoundError):
+            call_command('load_batch', 'https://jsonplaceholder.typicode.com/')
