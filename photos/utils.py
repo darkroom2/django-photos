@@ -1,5 +1,4 @@
 import json
-import logging
 import re
 import urllib.parse
 from io import BytesIO
@@ -11,25 +10,25 @@ from django.core.files.uploadedfile import UploadedFile
 
 from .models import Photo
 
-logger = logging.getLogger(__name__)
-
 
 def photo_from_url(url):
-    match = re.findall(r'/(\d+)/([a-fA-F0-9]+)', url)[0]
-    width = height = int(match[0])
-    color = f'{match[1]:06}'
+    width, height, color = parse_url_path(url)
 
-    ext = '.png'
+    ext = 'png'
 
-    image_data = requests.get(f'{url}{ext}').content
-    file_name = f'{width}x{height}_{color}{ext}'
+    # Check content-type
+    response = requests.get(f'{url}.{ext}')
+    content_type = response.headers['Content-Type']
+    if not content_type == f'image/{ext}':
+        raise ValueError(f'Invalid file format: {content_type}, provide image/{ext}')
 
-    image = UploadedFile(BytesIO(image_data), file_name)
+    image_data = BytesIO(response.content)
+    file_name = f'{width}x{height}_{color}.{ext}'
+    image = UploadedFile(image_data, file_name)
 
-    return Photo(width=width, height=height, color=f'#{color}', image=image, remote_url=url)
+    return Photo(width=width, height=height, color=f'#{color}', image=image)
 
 
-# TODO: verify usages and remove probably or use it in Serializer
 def validate_url(url):
     try:
         parsed_url = urllib.parse.urlparse(url)
@@ -37,11 +36,22 @@ def validate_url(url):
             raise ValueError(f'Invalid URL: {url}')
     except ValueError:
         raise
+
+    try:
+        parse_url_path(url)
+    except IndexError as e:
+        raise ValueError(f'Invalid URL: {url}') from e
+
     return url
 
 
-# TODO: verify usages and remove probably or use it in Serializer (method too complex to be util, does validation and
-#  then stuff, split this)
+def parse_url_path(url):
+    match = re.findall(r'/(\d+)/([a-fA-F0-9]+$)', url)[0]
+    width = height = int(match[0])
+    color = f'{match[1]:06}'
+    return width, height, color
+
+
 def get_json(json_url):
     try:
         validated_url = validate_url(json_url)

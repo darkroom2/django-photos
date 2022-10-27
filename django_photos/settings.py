@@ -136,9 +136,8 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 50
 }
 
-EXTERNAL_API_PHOTO_KEYS = {
-    'id': 'id',
+EXTERNAL_API_TO_PHOTO_FIELDS = {
     'title': 'title',
-    'album_id': 'albumId',
-    'url': 'url'
+    'albumId': 'album_id',
+    'url': 'remote_url'
 }

@@ -20,6 +20,41 @@ class PhotoSerializer(serializers.ModelSerializer):
             'url': {'read_only': True, 'source': 'image'}
         }
 
+    def create(self, validated_data):
+        remote_url = validated_data.get('remote_url')
+        photo = utils.photo_from_url(remote_url)
+        photo.title = validated_data.get('title')
+        photo.album_id = validated_data.get('album_id')
+        photo.remote_url = remote_url
+        photo.save()
+        return photo
+
+    def update(self, instance, validated_data):
+        # If the remote_url is updated, we need to update the image
+        remote_url = validated_data.get('remote_url')
+        if remote_url:
+            photo = utils.photo_from_url(remote_url)
+            instance.image = photo.image
+            instance.width = photo.width
+            instance.height = photo.height
+            instance.color = photo.color
+            instance.remote_url = remote_url
+        instance.title = validated_data.get('title', instance.title)
+        instance.album_id = validated_data.get('album_id', instance.album_id)
+        instance.save()
+        return instance
+
+    def validate(self, attrs):  # TODO: figure out hell with required=True for create and required=False for update
+        # Check if url is valid
+        url = attrs.get('remote_url')
+        try:
+            utils.validate_url(url)
+        except ValueError as e:
+            raise serializers.ValidationError(e)
+
+        # Generic validate the rest
+        return super().validate(attrs)
+
 
 class PhotosUploadSerializer(serializers.Serializer):
     json_file = serializers.FileField(required=False)
@@ -36,16 +71,17 @@ class PhotosUploadSerializer(serializers.Serializer):
         if validated_data.get('json_url'):
             json_data = json.loads(requests.get(validated_data['json_url']).content.decode('utf-8'))
 
-        # Create photos from json
-        photos_list = []
-        for photo_data in json_data:
-            photo = utils.photo_from_json(photo_data)
-            photos_list.append(photo)
+        # External api photo fields are mapped is defined in settings
+        converted_photos = []
+        for photo_json in json_data:
+            photo_converted = {settings.EXTERNAL_API_TO_PHOTO_FIELDS.get(key): value for key, value in
+                               photo_json.items() if key in settings.EXTERNAL_API_TO_PHOTO_FIELDS}
+            converted_photos.append(photo_converted)
 
-        # TODO: try using PhotoSerializer with param many=True???
-        # bulk_create photos
-        objs = Photo.objects.bulk_create(photos_list)
-        return objs
+        serializer = PhotoSerializer(data=converted_photos, many=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return serializer
 
     def update(self, instance, validated_data):
         pass
@@ -79,10 +115,9 @@ class PhotosUploadSerializer(serializers.Serializer):
         if not isinstance(json_data, list):
             raise serializers.ValidationError('JSON should contain a list of photos')
 
-        # Each photo should have proper photo keys
-        # TODO: try validate using PhotoSerializer???
-        for photo_data in json_data:
-            for key in settings.EXTERNAL_API_PHOTO_KEYS.values():
-                if key not in photo_data:
-                    raise serializers.ValidationError(f'Photo {photo_data}, should have {key} field')
+        # Each element of the list should be a dict
+        for photo_json in json_data:
+            if not isinstance(photo_json, dict):
+                raise serializers.ValidationError('Each element of the list should be a JSON')
+
         return data
