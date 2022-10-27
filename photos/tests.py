@@ -3,9 +3,9 @@ from io import StringIO
 from django.core.management import call_command, CommandError
 from django.test import TestCase
 
-from photos.utils import parse_url, validate_url
+from photos.utils import photo_from_url, validate_url
 
-
+# TODO: check tests!!! They broke
 class UtilsTest(TestCase):
     def setUp(self):
         pass
@@ -35,14 +35,14 @@ class UtilsTest(TestCase):
             ('https://via.placeholder.com/600/21d35', 600, 600, '#21d350')
         ]
         for url, width, height, color in valid_data:
-            photo = parse_url(url)
+            photo = photo_from_url(url)
             self.assertEqual(photo.width, width)
             self.assertEqual(photo.height, height)
             self.assertEqual(photo.color, color)
 
     def test_parse_url_valid_custom(self):
         valid_url = 'https://via.placeholder.com/600'
-        photo = parse_url(valid_url)
+        photo = photo_from_url(valid_url)
         self.assertEqual(photo.width, 0)
         self.assertEqual(photo.height, 0)
         self.assertEqual(photo.color, '#ffffff')

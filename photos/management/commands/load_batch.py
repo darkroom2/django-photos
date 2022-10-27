@@ -19,8 +19,9 @@ class Command(BaseCommand):
 
         files_count = len(json_content)
 
+        # TODO: try using serializers????
         with Pool() as pool:  # threading in I/O bound tasks might increase performance
-            results = pool.map(utils.prepare_photo, json_content)
+            results = pool.map(utils.photo_from_json, json_content)
 
         photos_to_save = list(filter(lambda x: x, results))
 

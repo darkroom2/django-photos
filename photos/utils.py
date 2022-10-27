@@ -14,36 +14,22 @@ from .models import Photo
 logger = logging.getLogger(__name__)
 
 
-def parse_url(url):
-    validated_url = validate_url(url)
+def photo_from_url(url):
+    match = re.findall(r'/(\d+)/([a-fA-F0-9]+)', url)[0]
+    width = height = int(match[0])
+    color = f'{match[1]:06}'
 
-    width = 0
-    height = 0
-    color = 'ffffff'
+    ext = '.png'
 
-    match = re.findall(r'/(\d+)/([a-fA-F0-9]+)', url)
-    if match:
-        result = match[0]
-        width = height = int(result[0])
-        color = f'{result[1]:06}'
-
-    ext = Path(validated_url).suffix
-    if not ext:
-        ext = '.png'
-        url = f'{url}{ext}'
-
-    image_data = requests.get(url).content
-
-    if not match:
-        width = 0  # TODO: get width from downloaded image
-        height = 0  # TODO: get height from downloaded image
-        color = 'ffffff'  # TODO: get color from downloaded image
-
+    image_data = requests.get(f'{url}{ext}').content
     file_name = f'{width}x{height}_{color}{ext}'
+
     image = UploadedFile(BytesIO(image_data), file_name)
-    return Photo(width=width, height=height, color=f'#{color}', image=image)
+
+    return Photo(width=width, height=height, color=f'#{color}', image=image, remote_url=url)
 
 
+# TODO: verify usages and remove probably or use it in Serializer
 def validate_url(url):
     try:
         parsed_url = urllib.parse.urlparse(url)
@@ -54,6 +40,8 @@ def validate_url(url):
     return url
 
 
+# TODO: verify usages and remove probably or use it in Serializer (method too complex to be util, does validation and
+#  then stuff, split this)
 def get_json(json_url):
     try:
         validated_url = validate_url(json_url)
@@ -72,22 +60,15 @@ def get_json(json_url):
         raise
 
 
-def prepare_photo(photo_data):
-    try:
-        _id = photo_data[settings.EXTERNAL_API_PHOTO_KEYS['id']]
-        title = photo_data[settings.EXTERNAL_API_PHOTO_KEYS['title']]
-        album_id = photo_data[settings.EXTERNAL_API_PHOTO_KEYS['album_id']]
-        photo_url = photo_data[settings.EXTERNAL_API_PHOTO_KEYS['url']]
-    except KeyError as e:
-        logger.error(f'Invalid JSON format: {photo_data}, missing: {e}')
-        return None
+def photo_from_json(photo_data):
+    _id = photo_data[settings.EXTERNAL_API_PHOTO_KEYS['id']]
+    title = photo_data[settings.EXTERNAL_API_PHOTO_KEYS['title']]
+    album_id = photo_data[settings.EXTERNAL_API_PHOTO_KEYS['album_id']]
+    remote_url = photo_data[settings.EXTERNAL_API_PHOTO_KEYS['url']]
 
-    if Photo.objects.filter(pk=_id).exists():
-        logger.warning(f'The photo from {photo_data} already exists')
-        return None
-
-    photo = parse_url(photo_url)
+    photo = photo_from_url(remote_url)
     photo.id = _id
     photo.title = title
     photo.album_id = album_id
+
     return photo
