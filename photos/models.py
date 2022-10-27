@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -9,7 +10,7 @@ class Photo(models.Model):
     color = models.CharField(max_length=7)
     remote_url = models.URLField()
 
-    image = models.ImageField(upload_to='images/')
+    image = models.ImageField(upload_to=settings.IMAGES_DIR)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
