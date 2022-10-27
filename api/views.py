@@ -32,7 +32,5 @@ class PhotoRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
         else:
             serializer.save()
 
-
-class PhotosUploadListCreate(generics.ListCreateAPIView):
-    queryset = []
+class PhotosUploadCreate(generics.CreateAPIView):
     serializer_class = PhotosUploadSerializer
