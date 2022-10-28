@@ -8,7 +8,7 @@ from api import serializers
 
 
 class Command(BaseCommand):
-    help = 'Loads batch of photos'
+    help = 'Loads batch of photos from either URL JSON or file JSON'
 
     def add_arguments(self, parser):
         parser.add_argument('json', type=str, help='URL or JSON file path')

@@ -1,5 +1,3 @@
-from unittest import mock
-
 from rest_framework.test import APITestCase
 
 from photos.models import Photo
@@ -21,14 +19,13 @@ class TestPhotosListView(APITestCase):
         _ = create_photo()
         response = self.client.get('/api/photos/')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data['results']), Photo.objects.count())
 
-    @mock.patch('photos.utils.photo_from_url')
-    def test_post_photo(self, mock_photo_from_url):
+    def test_post_photo(self):
         data = {
             'title': 'Photo 1',
             'album_id': 1,
-            'remote_url': 'https://via.placeholder.com/600/92c952',
+            'remote_url': 'https://via.placeholder.com/600/92c952'
         }
         response = self.client.post('/api/photos/', data=data)
         self.assertEqual(response.status_code, 201)
