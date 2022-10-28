@@ -27,7 +27,7 @@ def photo_from_url(url):
     return Photo(width=width, height=height, color=color, image=image)
 
 
-def validate_photo_url(url):  # TODO: implement this as URLValidator from rest_framework.validators
+def validate_photo_url(url):
     valid_url = validate_url(url)
 
     try:

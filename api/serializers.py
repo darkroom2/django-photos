@@ -9,21 +9,38 @@ from photos.models import Photo
 
 
 class PhotoSerializer(serializers.ModelSerializer):
+    # TODO: add name and description of endpoints
+
+    # TODO: photos/<int:pk> - PUT updates(title, album_id, url) <---- Make all fields optional (required=False)
+
+    # TODO: ^^^^^^ related to custom utils.validate_photo_url and utils.validate_url, probably overrides required=False
+    #  (make it as URLValidator from rest_framework.validators)
+
+    # TODO: photos/import - use `id` to skip if exists or OPTIONAL(update if differs)
+
+    # TODO: photos/import - fix FileField to accept JSON file
+
+    # TODO: load_batch - use serializers to load
+
+    # TODO: add tests: `api`: serializers, views, urls; `photos`: models, utils.validate_url, views
+
+    #  photos/ - POST creates(title, album_id, url)
+    #  photos/ - GET lists(id, title, album_id, width, height, color, url)
+    #  photos/<int:pk> - GET retrieves(id, title, album_id, width, height, color, url)
+    #  photos/<int:pk> - PUT updates(title, album_id, url)
+    #  photos/<int:pk> - DELETE
     class Meta:
         model = Photo
         fields = ('id', 'title', 'album_id', 'width', 'height', 'color', 'url', 'remote_url')
         read_only_fields = ('id', 'width', 'height', 'color')
         extra_kwargs = {
-            'title': {'required': False},
-            'album_id': {'required': False},
-            'remote_url': {'write_only': True, 'required': False},
+            'remote_url': {'write_only': True},
             'url': {'read_only': True, 'source': 'image'}
         }
 
     def create(self, validated_data):
         remote_url = validated_data.get('remote_url')
         photo = utils.photo_from_url(remote_url)
-        photo.id = validated_data.get('id')
         photo.title = validated_data.get('title')
         photo.album_id = validated_data.get('album_id')
         photo.remote_url = remote_url
@@ -45,7 +62,7 @@ class PhotoSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-    def validate(self, attrs):  # TODO: figure out hell with required=True for create and required=False for update
+    def validate(self, attrs):
         # Check if url is valid
         url = attrs.get('remote_url')
         try:

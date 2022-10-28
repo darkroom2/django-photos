@@ -2,6 +2,7 @@ from multiprocessing.dummy import Pool
 
 from django.core.management.base import BaseCommand
 
+from api import serializers
 from photos import utils
 from photos.models import Photo
 
@@ -11,15 +12,24 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('json', type=str, help='URL or JSON file')
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument('--url', action='store_true', help='Provided JSON is URL')
+        group.add_argument('--file', action='store_true', help='Provided JSON is file')
 
     def handle(self, *args, **options):
-        json_url = options['json']
+        # Check if file or url
 
+        if options['url']:
+
+
+
+        serializer = serializers.PhotosUploadSerializer()
+
+        json_url = options['json']
         json_content = utils.get_json(json_url)  # list of dicts
 
         files_count = len(json_content)
 
-        # TODO: try using serializers????
         with Pool() as pool:  # threading in I/O bound tasks might increase performance
             results = pool.map(utils.photo_from_json, json_content)
 
