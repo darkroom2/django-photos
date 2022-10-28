@@ -5,5 +5,5 @@ from .views import PhotoListCreate, PhotoRetrieveUpdateDestroy, PhotosUploadCrea
 urlpatterns = [
     path('photos/', PhotoListCreate.as_view()),
     path('photos/<int:pk>', PhotoRetrieveUpdateDestroy.as_view()),
-    path('photos_load/', PhotosUploadCreate.as_view()),
+    path('photos/import/', PhotosUploadCreate.as_view()),
 ]

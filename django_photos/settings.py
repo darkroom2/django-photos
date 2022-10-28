@@ -137,6 +137,7 @@ REST_FRAMEWORK = {
 }
 
 EXTERNAL_API_TO_PHOTO_FIELDS = {
+    'id': 'id',
     'title': 'title',
     'albumId': 'album_id',
     'url': 'remote_url'

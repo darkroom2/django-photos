@@ -23,6 +23,7 @@ class PhotoSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         remote_url = validated_data.get('remote_url')
         photo = utils.photo_from_url(remote_url)
+        photo.id = validated_data.get('id')
         photo.title = validated_data.get('title')
         photo.album_id = validated_data.get('album_id')
         photo.remote_url = remote_url
