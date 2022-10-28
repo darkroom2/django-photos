@@ -1,4 +1,7 @@
-from rest_framework.test import APITestCase
+import shutil
+
+from django.conf import settings
+from rest_framework.test import APITestCase, override_settings
 
 from photos.models import Photo
 
@@ -14,7 +17,13 @@ def create_photo():
     )
 
 
+@override_settings(MEDIA_ROOT=settings.BASE_DIR / 'tmp')
 class TestPhotosListView(APITestCase):
+    @classmethod
+    def tearDownClass(cls):
+        if settings.MEDIA_ROOT.exists():
+            shutil.rmtree(settings.MEDIA_ROOT)
+
     def test_get_photos(self):
         _ = create_photo()
         response = self.client.get('/api/photos/')

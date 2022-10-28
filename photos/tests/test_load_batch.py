@@ -9,7 +9,7 @@ from rest_framework.exceptions import ValidationError
 
 
 @override_settings(MEDIA_ROOT=settings.BASE_DIR / 'tmp')
-class LoadBatchCommandTest(TestCase):
+class TestLoadBatchCommand(TestCase):
     @classmethod
     def tearDownClass(cls):
         if settings.MEDIA_ROOT.exists():

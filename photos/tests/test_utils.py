@@ -3,7 +3,7 @@ from django.test import TestCase
 from photos import utils
 
 
-class UtilsTest(TestCase):
+class TestUtils(TestCase):
     def test_parse_url_path_valid(self):
         width, height, color, ext = utils.parse_url_path('https://via.placeholder.com/600/92c952')
         self.assertEqual(width, 600)
