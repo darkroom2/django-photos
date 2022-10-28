@@ -16,12 +16,12 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('title', models.CharField(max_length=100)),
-                ('album_id', models.IntegerField()),
-                ('width', models.IntegerField()),
-                ('height', models.IntegerField()),
+                ('album_id', models.PositiveIntegerField()),
+                ('width', models.PositiveIntegerField()),
+                ('height', models.PositiveIntegerField()),
                 ('color', models.CharField(max_length=7)),
-                ('remote_url', models.URLField()),
                 ('image', models.ImageField(upload_to='images/')),
+                ('remote_url', models.URLField()),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
             ],
             options={

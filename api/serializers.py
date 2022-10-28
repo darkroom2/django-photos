@@ -9,26 +9,6 @@ from photos.models import Photo
 
 
 class PhotoSerializer(serializers.ModelSerializer):
-    # TODO: add name and description of endpoints
-
-    # TODO: photos/<int:pk> - PUT updates(title, album_id, url) <---- Make all fields optional (required=False)
-
-    # TODO: ^^^^^^ related to custom utils.validate_photo_url and utils.validate_url, probably overrides required=False
-    #  (make it as URLValidator from rest_framework.validators)
-
-    # TODO: photos/import - use `id` to skip if exists or OPTIONAL(update if differs)
-
-    # TODO: photos/import - fix FileField to accept JSON file
-
-    # TODO: load_batch - use serializers to load
-
-    # TODO: add tests: `api`: serializers, views, urls; `photos`: models, utils.validate_url, views
-
-    #  photos/ - POST creates(title, album_id, url)
-    #  photos/ - GET lists(id, title, album_id, width, height, color, url)
-    #  photos/<int:pk> - GET retrieves(id, title, album_id, width, height, color, url)
-    #  photos/<int:pk> - PUT updates(title, album_id, url)
-    #  photos/<int:pk> - DELETE
     class Meta:
         model = Photo
         fields = ('id', 'title', 'album_id', 'width', 'height', 'color', 'url', 'remote_url')
@@ -62,16 +42,16 @@ class PhotoSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-    def validate(self, attrs):
+    def validate(self, data):
         # Check if url is valid
-        url = attrs.get('remote_url')
-        try:
-            utils.validate_photo_url(url)
-        except ValueError as e:
-            raise serializers.ValidationError(e)
-
+        remote_url = data.get('remote_url')
+        if remote_url:
+            try:
+                utils.validate_photo_url(remote_url)
+            except ValueError as e:
+                raise serializers.ValidationError(e)
         # Generic validate the rest
-        return super().validate(attrs)
+        return super().validate(data)
 
 
 class PhotosUploadSerializer(serializers.Serializer):
@@ -79,17 +59,8 @@ class PhotosUploadSerializer(serializers.Serializer):
     json_url = serializers.URLField(required=False)
 
     def create(self, validated_data):
-        json_data = None
-
-        # If json_file is provided, it should be a valid JSON
-        if validated_data.get('json_file'):
-            json_data = json.loads(validated_data['json_file'].read().decode('utf-8'))
-
-        # If json_url is provided, it should be a valid JSON
-        if validated_data.get('json_url'):
-            json_data = json.loads(requests.get(validated_data['json_url']).content.decode('utf-8'))
-
-        # External api photo fields are mapped is defined in settings
+        json_data = validated_data.get('json_data')
+        # External api photo fields are mapped in settings
         converted_photos = []
         for photo_json in json_data:
             photo_converted = {settings.EXTERNAL_API_TO_PHOTO_FIELDS.get(key): value for key, value in
@@ -102,7 +73,7 @@ class PhotosUploadSerializer(serializers.Serializer):
         return serializer
 
     def update(self, instance, validated_data):
-        pass
+        return super().update(instance, validated_data)
 
     def validate(self, data):
         # Only one field should be provided
@@ -118,14 +89,14 @@ class PhotosUploadSerializer(serializers.Serializer):
         # If json_file is provided, it should be a valid JSON
         if data.get('json_file'):
             try:
-                json_data = json.loads(data['json_file'].read().decode('utf-8'))
+                json_data = json.loads(data['json_file'].read())
             except json.JSONDecodeError:
                 raise serializers.ValidationError('Invalid file content, provide valid JSON')
 
         # If json_url is provided, it should be a valid JSON
         if data.get('json_url'):
             try:
-                json_data = json.loads(requests.get(data['json_url']).content.decode('utf-8'))
+                json_data = json.loads(requests.get(data['json_url']).content)
             except json.JSONDecodeError:
                 raise serializers.ValidationError('Invalid file content, provide valid JSON')
 
@@ -138,4 +109,5 @@ class PhotosUploadSerializer(serializers.Serializer):
             if not isinstance(photo_json, dict):
                 raise serializers.ValidationError('Each element of the list should be a JSON')
 
-        return data
+        data['json_data'] = json_data
+        return super().validate(data)

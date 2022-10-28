@@ -1,47 +1,36 @@
-from multiprocessing.dummy import Pool
+from io import BytesIO
+from pathlib import Path
 
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.management.base import BaseCommand
 
 from api import serializers
-from photos import utils
-from photos.models import Photo
 
 
 class Command(BaseCommand):
     help = 'Loads batch of photos'
 
     def add_arguments(self, parser):
-        parser.add_argument('json', type=str, help='URL or JSON file')
-        group = parser.add_mutually_exclusive_group()
+        parser.add_argument('json', type=str, help='URL or JSON file path')
+        group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument('--url', action='store_true', help='Provided JSON is URL')
         group.add_argument('--file', action='store_true', help='Provided JSON is file')
 
     def handle(self, *args, **options):
-        # Check if file or url
+        data = {}
 
-        if options['url']:
+        if options.get('url'):
+            data['json_url'] = options['json']
 
+        elif options.get('file'):
+            file_path = Path(options['json'])
+            file_data = BytesIO(file_path.read_bytes())
+            data['json_file'] = InMemoryUploadedFile(file=file_data, field_name='json_file', name=file_path.name,
+                                                     content_type='*/*', size=file_data.getbuffer().nbytes,
+                                                     charset='utf-8')
 
+        serializer = serializers.PhotosUploadSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        photos = serializer.save()
 
-        serializer = serializers.PhotosUploadSerializer()
-
-        json_url = options['json']
-        json_content = utils.get_json(json_url)  # list of dicts
-
-        files_count = len(json_content)
-
-        with Pool() as pool:  # threading in I/O bound tasks might increase performance
-            results = pool.map(utils.photo_from_json, json_content)
-
-        photos_to_save = list(filter(lambda x: x, results))
-
-        if photos_to_save:
-            Photo.objects.bulk_create(photos_to_save)
-
-        skipped_files_count = files_count - len(photos_to_save)
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f'Successfully loaded photos: {files_count - skipped_files_count}, skipped: {skipped_files_count}'
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f'Successfully loaded photos: {len(photos.validated_data)}'))

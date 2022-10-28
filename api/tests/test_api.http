@@ -1,0 +1,94 @@
+###
+# api/photos/
+# GET: List all photos
+# POST: Create a new photo
+OPTIONS http://localhost:8000/api/photos/
+Accept: application/json
+
+###
+GET http://localhost:8000/api/photos/
+Accept: application/json
+
+###
+GET http://localhost:8000/api/photos/?page=2
+Accept: application/json
+
+###
+POST http://localhost:8000/api/photos/
+Content-Type: application/json
+
+{
+  "title": "accusamus beatae ad facilis cum similique qui sunt",
+  "album_id": 1,
+  "remote_url": "https://via.placeholder.com/600/92c952"
+}
+
+###
+POST http://localhost:8000/api/photos/
+Content-Type: application/json
+
+{
+  "title": "accusamus beatae ad facilis cum similique qui sunt",
+  "remote_url": "https://via.placeholder.com/600/92c952"
+}
+
+
+###
+# /api/photos/<id>
+# GET: Retrieve a photo
+# PUT: Update a photo
+# PATCH: Partial update a photo
+# DELETE: Delete a photo
+OPTIONS http://localhost:8000/api/photos/1
+Accept: application/json
+
+###
+GET http://localhost:8000/api/photos/1
+Accept: application/json
+
+###
+PUT http://localhost:8000/api/photos/1
+Content-Type: application/json
+
+{
+  "title": "accusamus beatae ad facilis cum similique qui sunt2",
+  "album_id": 1,
+  "remote_url": "https://via.placeholder.com/600/92c952"
+}
+
+###
+PATCH http://localhost:8000/api/photos/1
+Content-Type: application/json
+
+{
+  "title": "accusamus beatae ad facilis cum similique qui sunt"
+}
+
+###
+DELETE http://localhost:8000/api/photos/3
+Accept: application/json
+
+
+###
+# photos/import/
+# POST: Upload photos from external api
+OPTIONS http://localhost:8000/api/photos/import/
+Accept: application/json
+
+###
+POST http://localhost:8000/api/photos/import/
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="json_file"; filename="photos_small.json"
+
+< ../../test_data/photos_small.json
+--boundary
+
+###
+POST http://localhost:8000/api/photos/import/
+Content-Type: application/json
+
+{
+  "json_url": "http://127.0.0.1:8000/media/photos_small.json"
+}
