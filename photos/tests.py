@@ -59,6 +59,10 @@ class UtilsTest(TestCase):
         with self.assertRaises(IndexError):
             utils.photo_from_url('https://via.placeholder.com/600')
 
+    def test_parse_url_valid_ext_invalid(self):
+        with self.assertRaisesMessage(ValueError, 'Invalid file format: text/html; charset=UTF-8 or extension: .fake'):
+            utils.photo_from_url('https://via.placeholder.com/600/92c952.fake')
+
 
 class LoadBatchCommandTest(TestCase):
     def test_missing_arg(self):
