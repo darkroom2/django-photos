@@ -27,6 +27,17 @@ def photo_from_url(url):
     return Photo(width=width, height=height, color=color, image=image)
 
 
+def validate_photo_url(url):  # TODO: implement this as URLValidator from rest_framework.validators
+    valid_url = validate_url(url)
+
+    try:
+        parse_url_path(valid_url)
+    except IndexError as e:
+        raise ValueError(f'Invalid URL: {url}') from e
+
+    return url
+
+
 def validate_url(url):
     try:
         parsed_url = urllib.parse.urlparse(url)
@@ -34,11 +45,6 @@ def validate_url(url):
             raise ValueError(f'Invalid URL: {url}')
     except ValueError:
         raise
-
-    try:
-        parse_url_path(url)
-    except IndexError as e:
-        raise ValueError(f'Invalid URL: {url}') from e
 
     return url
 

@@ -37,7 +37,7 @@ class UtilsTest(TestCase):
         ]
         for url in invalid_urls:
             with self.assertRaises(ValueError):
-                utils.validate_url(url)
+                utils.validate_photo_url(url)
 
     def test_validate_url_valid(self):
         valid_urls = [
@@ -46,7 +46,7 @@ class UtilsTest(TestCase):
             'https://via.placeholder.com/600/21d35.png'
         ]
         for url in valid_urls:
-            validated_url = utils.validate_url(url)
+            validated_url = utils.validate_photo_url(url)
             self.assertEqual(validated_url, url)
 
     def test_parse_url_valid(self):

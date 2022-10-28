@@ -48,7 +48,7 @@ class PhotoSerializer(serializers.ModelSerializer):
         # Check if url is valid
         url = attrs.get('remote_url')
         try:
-            utils.validate_url(url)
+            utils.validate_photo_url(url)
         except ValueError as e:
             raise serializers.ValidationError(e)
 
