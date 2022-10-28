@@ -3,12 +3,31 @@ from io import StringIO
 from django.core.management import call_command, CommandError
 from django.test import TestCase
 
-from photos.utils import photo_from_url, validate_url
+from photos import utils
+
 
 # TODO: check tests!!! They broke
 class UtilsTest(TestCase):
     def setUp(self):
         pass
+
+    def test_parse_url_path_valid(self):
+        width, height, color, ext = utils.parse_url_path('https://via.placeholder.com/600/92c952')
+        self.assertEqual(width, 600)
+        self.assertEqual(height, 600)
+        self.assertEqual(color, '#92c952')
+        self.assertEqual(ext, '')
+
+    def test_parse_url_path_valid_with_ext(self):
+        width, height, color, ext = utils.parse_url_path('https://via.placeholder.com/600/92c952.png')
+        self.assertEqual(width, 600)
+        self.assertEqual(height, 600)
+        self.assertEqual(color, '#92c952')
+        self.assertEqual(ext, '.png')
+
+    def test_parse_url_path_invalid(self):
+        with self.assertRaises(IndexError):
+            utils.parse_url_path('https://www.example.com/')
 
     def test_validate_url_invalid(self):
         invalid_urls = [
@@ -18,34 +37,27 @@ class UtilsTest(TestCase):
         ]
         for url in invalid_urls:
             with self.assertRaises(ValueError):
-                validate_url(url)
+                utils.validate_url(url)
 
     def test_validate_url_valid(self):
         valid_urls = [
             'https://via.placeholder.com/600/92c952',
             'https://via.placeholder.com/600/21d35'
+            'https://via.placeholder.com/600/21d35.png'
         ]
         for url in valid_urls:
-            validated_url = validate_url(url)
+            validated_url = utils.validate_url(url)
             self.assertEqual(validated_url, url)
 
-    def test_parse_url_valid(self):  # TODO: add mocking file download
-        valid_data = [
-            ('https://via.placeholder.com/600/92c952', 600, 600, '#92c952'),
-            ('https://via.placeholder.com/600/21d35', 600, 600, '#21d350')
-        ]
-        for url, width, height, color in valid_data:
-            photo = photo_from_url(url)
-            self.assertEqual(photo.width, width)
-            self.assertEqual(photo.height, height)
-            self.assertEqual(photo.color, color)
+    def test_parse_url_valid(self):
+        photo = utils.photo_from_url('https://via.placeholder.com/600/92c952.png')
+        self.assertEqual(photo.width, 600)
+        self.assertEqual(photo.height, 600)
+        self.assertEqual(photo.color, '#92c952')
 
-    def test_parse_url_valid_custom(self):
-        valid_url = 'https://via.placeholder.com/600'
-        photo = photo_from_url(valid_url)
-        self.assertEqual(photo.width, 0)
-        self.assertEqual(photo.height, 0)
-        self.assertEqual(photo.color, '#ffffff')
+    def test_parse_url_invalid(self):
+        with self.assertRaises(IndexError):
+            utils.photo_from_url('https://via.placeholder.com/600')
 
 
 class LoadBatchCommandTest(TestCase):
