@@ -38,7 +38,7 @@ Run tests:
 Run tests with coverage:
 
 ```shell
-coverage run --source='.' manage.py test
+coverage run --source=api,photos manage.py test
 coverage report
 ```
 
@@ -60,7 +60,7 @@ coverage report
 
 * POST: Upload photos from external api
 
-Example requests are included in [test_api.http](api/tests/test_api.http) file.
+Example requests are included in [requests.http](requests.http) file.
 
 ## CLI
 
